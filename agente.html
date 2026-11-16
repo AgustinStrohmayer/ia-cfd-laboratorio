@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agente CFD · arma el caso solo · TB133</title>
+<link rel="stylesheet" href="agente.css">
+</head>
+<body>
+<div class="barra-sup">
+  <span class="logo">◆ agente-cfd</span>
+  <span class="ruta">~/IMCF/piso_auto</span>
+  <span class="sep"></span>
+  <label>velocidad <select id="vel"><option value="1">1×</option><option value="2.5" selected>2,5×</option><option value="6">6×</option></select></label>
+  <button id="saltar" class="chico">Saltar al final</button>
+  <a href="index.html" class="chico">Laboratorio ↗</a>
+</div>
+
+<div class="app">
+  <aside class="arbol">
+    <div class="titulo-panel">ARCHIVOS</div>
+    <div id="arbol"></div>
+    <div class="titulo-panel">CHECKLIST</div>
+    <ul id="checks" class="checks"></ul>
+  </aside>
+
+  <section class="chat">
+    <div id="hilo" class="hilo"></div>
+    <div class="entrada">
+      <div id="chips" class="chips"></div>
+      <div class="caja">
+        <span class="prompt">&gt;</span>
+        <input id="txt" placeholder="Escribí un pedido para el agente…" autocomplete="off">
+        <button id="enviar">Enviar</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="visor">
+    <div class="pestanas">
+      <button data-p="vista" class="activa">Visor</button>
+      <button data-p="archivo">Archivo</button>
+    </div>
+    <div id="p-vista" class="panel">
+      <div class="herr">
+        <span class="grupo" id="modo">
+          <button data-m="geo" class="activa">Geometría</button><button data-m="malla">Malla</button><button data-m="campo">|U|</button>
+        </span>
+        <span class="grupo" id="zoom">
+          <button data-z="todo">Dominio</button><button data-z="cuerpo" class="activa">Cuerpo</button><button data-z="difusor">Difusor</button>
+        </span>
+      </div>
+      <canvas id="cv"></canvas>
+      <div id="leyenda" class="leyenda"></div>
+      <div class="editor">
+        <div class="cab">system/blockMeshDict · editá y aplicá</div>
+        <code>h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input id="ed-h" type="number" step="0.001" value="0.020">;&nbsp;&nbsp;<span class="com">// altura al piso [m]</span></code>
+        <code>theta&nbsp;&nbsp;&nbsp;<input id="ed-t" type="number" step="0.5" value="4">;&nbsp;&nbsp;<span class="com">// ángulo del difusor [°]</span></code>
+        <button id="aplicar">Aplicar</button>
+      </div>
+      <div id="estado" class="estado"></div>
+    </div>
+    <div id="p-archivo" class="panel oculto">
+      <div id="arch-nombre" class="arch-nombre">Elegí un archivo del árbol</div>
+      <pre id="arch"></pre>
+    </div>
+  </section>
+</div>
+<footer>Demo guionada: el agente sigue un guion fijo y entiende pocos pedidos. Los diccionarios, las mallas, los logs y los
+  <i>C<sub>l</sub></i> del caso armado son de corridas reales de OpenFOAM v2412. Con otros <i>h</i> y θ, el campo y el
+  <i>C<sub>l</sub></i> son la predicción de la IA entrenada con 36 corridas, no una corrida.</footer>
+
+<script src="datos.js"></script>
+<script src="agente_datos.js"></script>
+<script src="nucleo.js"></script>
+<script src="agente_ui.js"></script>
+<script src="agente_guion.js"></script>
+</body>
+</html>
