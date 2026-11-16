@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IA en CFD · laboratorio interactivo · TB133</title>
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<header>
+  <div class="marco">
+    <p class="sobre">TB133 · Introducción a la Mecánica Computacional en Fluidos · FIUBA</p>
+    <h1>IA en CFD: laboratorio interactivo</h1>
+    <p class="bajada">Un piso de auto en efecto suelo, 36 corridas de <code>simpleFoam</code> ya resueltas y una IA
+      que aprendió de ellas. Todo corre en el navegador: muevan, prueben, traten de romperla.</p>
+    <nav>
+      <a href="#ajuste"><b>1</b> Aprender es ajustar</a>
+      <a href="#sustituto"><b>2</b> El sustituto</a>
+      <a href="#juego"><b>3</b> ¿Le ganás a la IA?</a>
+      <a href="#caliente"><b>4</b> Arranque en caliente</a>
+      <a href="#doe"><b>5</b> La IA elige qué correr</a>
+      <a href="#quiz"><b>6</b> ¿Existe o lo inventó?</a>
+    </nav>
+  </div>
+</header>
+
+<main class="marco">
+
+<section id="caso" class="caso">
+  <svg viewBox="-0.42 0.02 1.55 0.36" aria-label="Esquema del caso">
+    <rect x="-0.42" y="0.34" width="1.6" height="0.03" fill="#ccc"/>
+    <path id="esq" fill="#e6e6e6" stroke="#222" stroke-width="0.004"/>
+    <text x="0.3" y="0.21" font-size="0.04">cuerpo de 1 m</text>
+    <text x="-0.41" y="0.08" font-size="0.035" fill="#1f77b4">U∞ = 20 m/s →</text>
+    <text x="0.62" y="0.075" font-size="0.03" fill="#b22">difusor: ángulo θ</text>
+    <text x="0.1" y="0.335" font-size="0.03" fill="#b22">altura al piso h ↕</text>
+  </svg>
+  <p>Caso 2D, <code>simpleFoam</code> con <i>k</i>-ω SST, piso móvil, 6090 celdas, 3 s por corrida.
+    Dos parámetros de diseño: altura al piso <i>h</i> (10 a 40 mm) y ángulo del difusor θ (0 a 16°).
+    Biblioteca: grilla de 4 × 9 = 36 casos. <i>C<sub>l</sub></i> &lt; 0 es carga hacia abajo.</p>
+</section>
+
+<section id="ajuste">
+  <h2><span>1</span> Aprender es ajustar</h2>
+  <p class="idea">Entrenar un modelo es elegir sus coeficientes para que reproduzca los datos. Es lo mismo que
+    un ajuste por mínimos cuadrados, con más coeficientes. Lo que importa es cómo predice los puntos que
+    <b>no</b> usó para ajustar.</p>
+  <div class="controles">
+    <label>Altura al piso <select id="aj-h"></select></label>
+    <label>Modelo <select id="aj-modelo"><option value="poli">polinomio</option><option value="gp">proceso gaussiano</option></select></label>
+    <label id="aj-grado-l">Grado <input type="range" id="aj-grado" min="0" max="8" value="2"> <output id="aj-grado-o">2</output></label>
+  </div>
+  <canvas id="aj-cv" class="graf"></canvas>
+  <p class="nota">Puntos llenos: entrenamiento. Huecos: prueba (el modelo no los ve). Hacé clic en un punto para cambiarlo de grupo.</p>
+  <div class="metricas" id="aj-met"></div>
+  <details><summary>Qué mirar</summary>
+    <ul>
+      <li>Grado 0 o 1: no alcanza para seguir los datos (subajuste). Error alto en los dos grupos.</li>
+      <li>Grado 4: acierta los puntos de prueba. Grado 8: el error en prueba apenas sube, pero mirá qué predice más allá de 16°.</li>
+      <li>A la derecha de 16° no hay datos. Cada modelo dice algo distinto, y ninguno avisa que está inventando.</li>
+      <li>El proceso gaussiano además dibuja su incertidumbre: crece donde no tiene datos.</li>
+    </ul></details>
+</section>
+
+<section id="sustituto">
+  <h2><span>2</span> El sustituto: la IA predice el flujo</h2>
+  <p class="idea">Con las 36 soluciones se arman un campo promedio y 10 patrones (POD). Un proceso gaussiano
+    aprende cuánto pesa cada patrón según (<i>h</i>, θ). Para un diseño nuevo, la IA suma los patrones y devuelve el
+    campo en milisegundos, sin resolver ninguna ecuación.</p>
+  <div class="dos">
+    <div>
+      <div class="controles">
+        <label><i>h</i> <input type="range" id="su-h" min="5" max="60" step="1" value="25"> <output id="su-h-o"></output></label>
+        <label>θ <input type="range" id="su-t" min="0" max="24" step="0.5" value="5"> <output id="su-t-o"></output></label>
+      </div>
+      <div class="controles">
+        <label><input type="radio" name="su-modo" value="ia" checked> IA (POD + proceso gaussiano)</label>
+        <label><input type="radio" name="su-modo" value="vecino"> Vecino (copia el caso más parecido)</label>
+      </div>
+      <canvas id="su-cv" class="campo"></canvas>
+      <canvas id="su-barra" class="barra"></canvas>
+    </div>
+    <div class="lado">
+      <canvas id="su-mapa" class="mapa"></canvas>
+      <p class="nota">Puntos: casos de la biblioteca. Sombreado: incertidumbre de la IA. Clic para elegir un diseño.</p>
+      <div id="su-info" class="info"></div>
+    </div>
+  </div>
+</section>
+
+<section id="juego">
+  <h2><span>3</span> ¿Le ganás a la IA?</h2>
+  <p class="idea">Once diseños que no están en la biblioteca, corridos después con OpenFOAM. Mirá los casos
+    vecinos, apostá un <i>C<sub>l</sub></i> y compará con la apuesta de la IA. Decide OpenFOAM.</p>
+  <div class="pares" id="ju-pares"></div>
+  <div class="dos">
+    <div id="ju-vecinos" class="info"></div>
+    <div class="info">
+      <label>Tu apuesta de <i>C<sub>l</sub></i> <input type="number" id="ju-apuesta" step="0.01" placeholder="ej. −0.35"></label>
+      <button id="ju-ver">Ver resultado</button>
+      <div id="ju-res"></div>
+      <p id="ju-marcador" class="marcador"></p>
+    </div>
+  </div>
+</section>
+
+<section id="caliente">
+  <h2><span>4</span> Arranque en caliente: la IA propone, el solver corrige</h2>
+  <p class="idea">El campo de la IA no se usa como resultado: se usa como condición inicial. En un caso
+    estacionario la condición inicial cambia el camino, no la solución. Las ecuaciones y los contornos deciden
+    el <i>C<sub>l</sub></i> final.</p>
+  <div class="controles"><button id="ca-play">▶ Correr las tres</button>
+    <span class="nota">Grupo 1: <i>h</i> = 15 mm, θ = 2°. Frío: 20 m/s en todo el dominio. Vecino: copia el caso
+      resuelto más parecido. IA: campo predicho.</span></div>
+  <canvas id="ca-cv" class="graf"></canvas>
+  <h3>Los once pares de prueba</h3>
+  <canvas id="ca-barras" class="graf bajo"></canvas>
+</section>
+
+<section id="doe">
+  <h2><span>5</span> La IA elige qué correr</h2>
+  <p class="idea">Correr la grilla entera cuesta 36 corridas. Un sustituto de <i>C<sub>l</sub></i>(<i>h</i>, θ) puede
+    decidir cuál conviene correr ahora: donde espera más carga o donde sabe menos. ¿Cuántas corridas hacen falta
+    para encontrar el mejor diseño?</p>
+  <div class="controles">
+    <button id="do-ia">La IA elige la próxima</button>
+    <button id="do-azar">Una al azar</button>
+    <button id="do-reset" class="sec">Volver a 4 esquinas</button>
+    <span class="nota">También podés hacer clic en un punto de la grilla para correrlo vos.</span>
+  </div>
+  <div class="dos">
+    <div><canvas id="do-cv" class="mapa ancho"></canvas></div>
+    <div><canvas id="do-real" class="mapa ancho"></canvas></div>
+  </div>
+  <div id="do-info" class="metricas"></div>
+</section>
+
+<section id="quiz">
+  <h2><span>6</span> ¿Existe o lo inventó?</h2>
+  <p class="idea">Un modelo de lenguaje escribe el texto más probable dado lo anterior. Un nombre que suena a
+    OpenFOAM es muy probable aunque no exista. ¿Cuáles de estas condiciones de borde existen en v2412?</p>
+  <div id="qz" class="quiz"></div>
+  <p id="qz-res" class="nota"></p>
+</section>
+
+<section class="cierre">
+  <p><b>La IA propone; OpenFOAM y ustedes deciden.</b> Un modelo aprendido vale dentro del rango de sus datos,
+    y cada resultado se verifica con números.</p>
+  <p class="nota">Datos: 36 corridas de <code>simpleFoam</code> (OpenFOAM v2412), caso 2D sin validar contra ensayo:
+    sirve para ver tendencias. Modelo: POD con 10 modos y procesos gaussianos, sólo numpy y JavaScript.</p>
+</section>
+</main>
+
+<script src="datos.js"></script>
+<script src="nucleo.js"></script>
+<script src="secciones_a.js"></script>
+<script src="secciones_b.js"></script>
+</body>
+</html>
